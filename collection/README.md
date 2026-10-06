@@ -2,11 +2,53 @@
 
 데이터를 수집하는 코드를 저장하는 폴더입니다.
 
-## 수집 방법 예시
+## 분석 대상 및 수집 범위
 
-- 공개 API(예: 네이버 뉴스 API, YouTube Data API, Reddit API)
-- 크롤링
-- 공개 데이터셋(Kaggle, Hugging Face 등)
+| 항목 | 기준 |
+| --- | --- |
+| 분석 그룹 | 방탄소년단(BTS), 블랙핑크(BLACKPINK), 베이비몬스터(BABYMONSTER), 코르티스(CORTIS) |
+| 수집 언어 | 한국어(`ko`), 영어(`en`) |
+| 자료 유형 | 뉴스 기사, YouTube 댓글 |
+| 수집 기간 | 각 그룹의 데뷔일부터 수집 시점까지 |
+
+## 수집 방법 및 목표 데이터 양
+
+아래 건수는 **그룹별·언어별 수집 목표**입니다. CSV의 한 행은 뉴스 기사 또는 댓글 한 건에 해당합니다.
+
+| 자료 유형 | 수집 방법 | 한국어: 그룹당 | 영어: 그룹당 | 4개 그룹 합계 |
+| --- | --- | ---: | ---: | ---: |
+| 뉴스 기사 | 뉴스 API | 100행 | 100행 | 800행 |
+| 댓글 | YouTube Data API | 400행 | 400행 | 3,200행 |
+| **합계** | | **500행** | **500행** | **4,000행** |
+
+## 저장 형식 및 컬럼
+
+수집 결과는 CSV 형식으로 저장합니다.
+
+```text
+id, group, language, source, source_url, query, title, text, text_type, published_at, collected_at
+```
+
+| 컬럼 | 설명 |
+| --- | --- |
+| `id` | 문서 또는 댓글의 고유 ID |
+| `group` | 분석 대상 그룹명 |
+| `language` | 본문 언어: `ko` 또는 `en` |
+| `source` | 뉴스 매체 또는 플랫폼명 |
+| `source_url` | 원본 기사 또는 댓글의 출처 링크 |
+| `query` | 수집에 사용한 검색어 |
+| `title` | 뉴스 기사 제목 또는 댓글이 달린 영상 제목 |
+| `text` | 뉴스 기사 본문 또는 댓글 내용 |
+| `text_type` | 자료 유형: `news` 또는 `comment` |
+| `published_at` | 기사 또는 댓글 작성일 |
+| `collected_at` | 데이터 수집일 |
+
+### 저장 위치
+
+- 한국어 원본 데이터: `data/raw/ko/`
+- 영어 원본 데이터: `data/raw/en/`
+- 한국어 수집 코드: `collection/ko/`
+- 영어 수집 코드: `collection/en/`
 
 ## 수집 윤리
 
