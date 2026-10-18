@@ -2,7 +2,7 @@
 
 전처리가 끝난 데이터로 LDA 토픽 모델링을 수행하는 코드를 정리한 문서입니다.
 
-- 노트북: `Topic_Modeling.ipynb` (레포 최상위 폴더)
+- 노트북: `Topic_Modeling_ko.ipynb` (레포 최상위 폴더)
 - 라이브러리: Gensim (`LdaModel`, `CoherenceModel`), pyLDAvis
 - 코드 구성: 수업 실습 7-2 노트북의 셀 순서를 따름
 - 언어별로 모델을 따로 학습함 (한국어 1개, 영어 1개)
