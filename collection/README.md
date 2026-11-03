@@ -1,52 +1,24 @@
-# 데이터 수집 코드
+# 데이터 수집
 
-데이터를 수집하는 코드를 저장하는 폴더입니다.
+한국어·영어 뉴스 수집 코드입니다. 실행 기준은 저장소 루트, Python 3.12입니다.
 
-## 분석 대상 및 수집 범위
+| 언어 | 코드 / 안내 | 수집 대상 | 설치 파일 |
+| --- | --- | --- | --- |
+| 한국어 | [crawling_ko.py](ko/crawling_ko.py) · [README](ko/README.md) | 뉴스엔, 6개 그룹 | [requirements](ko/requirements.txt) |
+| 영어 | [README](en/README.md) | GDELT 검색 → 언론사 본문, 4개 그룹 | [requirements](en/requirements.txt) |
 
-| 항목 | 기준 |
-| --- | --- |
-| 분석 그룹 | 방탄소년단, 블랙핑크, 세븐틴, 트와이스, 베이비몬스터, 코르티스 |
-| 수집 언어 | 한국어(`ko`), 영어(`en`) |
-| 자료 유형 | 뉴스 기사 |
-| 수집 기간 | 2017년 1월 ~ 2026년 10월 |
-
-## 수집 방법 및 목표 데이터 양
-
-- 한국어는 모든 그룹 그룹당 200건
-- 영어는 베이비몬스터,코르티스를 제외하고 그룹당 200건
-
-## 저장 형식 및 컬럼
-
-수집 결과는 CSV 형식으로 저장합니다.
-
-```text
-id, group, language, source, source_url, query, title, text, text_type, published_at, collected_at
+```bash
+python -m pip install -r collection/requirements.txt
 ```
 
-| 컬럼 | 설명 |
-| --- | --- |
-| `id` | 문서 또는 댓글의 고유 ID |
-| `group` | 분석 대상 그룹명 |
-| `language` | 본문 언어: `ko` 또는 `en` |
-| `source` | 뉴스 매체 또는 플랫폼명 |
-| `source_url` | 원본 기사 또는 댓글의 출처 링크 |
-| `query` | 수집에 사용한 검색어 |
-| `title` | 뉴스 기사 제목 또는 댓글이 달린 영상 제목 |
-| `text` | 뉴스 기사 본문 또는 댓글 내용 |
-| `text_type` | 자료 유형: `news` 또는 `comment` |
-| `published_at` | 기사 또는 댓글 작성일 |
-| `collected_at` | 데이터 수집일 |
+한국어는 BTS·블랙핑크·세븐틴·트와이스·베이비몬스터·코르티스 각 200건을 목표로 합니다.
+영어는 앞의 4개 그룹을 수집한 뒤 최종 표본을 그룹당 200건으로 추출합니다.
+수집 기간은 코드의 현재 날짜/설정에 따라 결정되므로 재실행 결과가 2026년 10월의 수록 데이터와 같지는 않습니다.
 
-### 저장 위치
+공통 컬럼은 `id, group, language, source, source_url, query, title, text,
+text_type, published_at, collected_at`입니다. 댓글 수집 스크립트는 이 저장소에 없습니다.
+수록 CSV의 실제 건수·스키마는 [데이터 안내](../data/README.md)를 확인하세요.
+수집기의 기본 출력 위치와 팀 배포 파일 위치는 다릅니다. 각 언어 README의 경로를 따르세요.
 
-- 한국어 원본 데이터: `data/raw/ko/`
-- 영어 원본 데이터: `data/raw/en/`
-- 한국어 수집 코드: `collection/ko/`
-- 영어 수집 코드: `collection/en/`
-
-## 수집 윤리
-
-- robots.txt·저작권·이용약관 준수
-- 개인정보(작성자 아이디 등) 비식별화
-- 데이터 카드(출처·기간·건수·수집 방법 정리) 작성
+수집 코드는 robots.txt와 요청 간격을 확인합니다. API·웹페이지 변경이나 접근 제한으로
+목표 건수에 못 미칠 수 있으므로 수집 로그와 커버리지를 함께 확인합니다.

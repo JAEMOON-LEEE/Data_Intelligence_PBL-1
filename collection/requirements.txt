@@ -1,0 +1,2 @@
+-r ko/requirements.txt
+-r en/requirements.txt

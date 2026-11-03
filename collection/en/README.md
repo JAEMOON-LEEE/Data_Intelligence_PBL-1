@@ -1,97 +1,121 @@
-# K-POP 국내 vs. 해외 반응: 영어 데이터 수집 및 전처리
+# 영어 뉴스 수집 및 표본 생성
 
-> **GitHub 저장소 구조 안내**: 이 폴더(`collection/en/`)의 코드는 원래 한 폴더에서
-> 실행하도록 만들어졌습니다. 다시 실행하려면 `collection/en/`과 `preprocessing/en/`의
-> `.py` 파일을 한 폴더에 모아서 아래 순서대로 실행하세요.
-> 최종 데이터: `data/raw/en/raw_en.csv`, `data/processed/en/processed_en.csv`
-> (그룹당 200건, 한국어 데이터와 같은 컬럼 형식).
-
-
-데이터 인텔리전스 PBL Module #1 (영어 파트).
-BTS, SEVENTEEN, BLACKPINK, TWICE에 대한 **해외 영어 뉴스 기사 본문**을 수집하고
-(GDELT + 본문 크롤링), 정제한 뒤 Count/TF-IDF 및 LDA 분석용으로 전처리합니다.
-아래 **최종 파이프라인**부터 보면 됩니다. 영어 원문 README(`README.md`)의 뒷부분은
-이전 계획(유튜브 댓글 등)으로, 참고용으로만 남겨 두었습니다.
+BTS·BLACKPINK·SEVENTEEN·TWICE의 해외 영어 기사를 GDELT로 검색하고 본문을 추출합니다.
+아래 명령은 **저장소 루트**에서 실행합니다. 수집·전처리 파일을 옮길 필요가 없습니다.
 
 ## 설치
 
+Python 3.12 가상환경을 만든 뒤 실행합니다.
+
 ```bash
-pip install -r requirements.txt
+python -m pip install -r collection/en/requirements.txt -r preprocessing/en/requirements.txt
 python -m spacy download en_core_web_sm
 ```
 
-최종 파이프라인(GDELT + 크롤링)은 **API 키가 필요 없습니다.**
-(YouTube / Guardian 키는 이전 계획에서만 사용)
+GDELT 경로에는 API 키가 필요 없습니다. `config.py`의 `GROUPS`, `NEWS_PER_LANG=1000`,
+`EN_SOURCES=['gdelt_news']`, `RANDOM_SEED=42`가 실행 설정입니다.
+`collect_news_en_trial.py`는 종료일로 현재 날짜를 사용합니다. `config.END_DATE`는
+별도 수집기 `collect_news_gdelt.py`에서만 적용되므로 trial 종료일 설정으로 사용하지 마세요.
+Guardian을 별도로 시험할 때만 `.env.example`을 이 폴더의 `.env`로 복사해
+`GUARDIAN_API_KEY`를 설정하고 `EN_SOURCES`에 `guardian`을 포함합니다.
+기본 `EN_SOURCES=['gdelt_news']`에서는 Guardian을 조회하지 않습니다.
+YouTube/Naver 수집 스크립트는 포함되어 있지 않습니다.
 
-## 최종 파이프라인: 4개 그룹, 영어 기사 본문 (확정, 2026-10-13)
-
-그룹: **BTS, SEVENTEEN, BLACKPINK, TWICE** (보이그룹 2 + 걸그룹 2, HYBE / YG / JYP)
-Colab에서 Google Drive 폴더 안에서 실행합니다. 연결이 끊겨도 캐시가 남아서 이어서 실행됩니다.
+## 실행 순서
 
 ```bash
-# 1단계  헤드라인 수집 (GDELT): 그룹당 최대 1,000개, 연도별로 균등하게 (2017~현재)
-python collect_news_en_trial.py
-#   -> data/raw/news_en_headlines.csv
-#   -> data/check/spotcheck_kept.csv, rejected_<그룹>.csv   (필터 확인용, 꼭 읽어보기)
-
-# 2단계  본문 크롤링: 모든 헤드라인 URL 방문 (중단돼도 이어서 실행 가능)
-python collect_fulltext_en.py --limit 40      # 빠른 테스트
-python collect_fulltext_en.py                 # 전체 (약 1~1.5시간)
-#   -> data/extra/news_en_fulltext.csv, fetch_report.csv, fulltext_by_year.csv
-
-# 3단계  정제: 광고/리다이렉트/중복 페이지, 그룹 이름이 없는 본문 제거
-python clean_fulltext_en.py
-#   -> data/extra/news_en_fulltext_clean.csv, site_list.csv
-
-# 4단계  data/raw로 교체 (merge.py는 data/raw 안의 모든 csv를 합치므로 주의), 전처리
-mkdir -p data/headline_version && mv data/raw/news_en_headlines.csv data/headline_version/
-cp data/extra/news_en_fulltext_clean.csv data/raw/news_en_fulltext.csv
-python merge.py && python preprocess_en.py && python check_data.py
-#   -> data/raw/all_raw.csv, data/processed/en_processed.csv  (분석용 메인 파일)
+# 1. 헤드라인 검색
+python collection/en/collect_news_en_trial.py
+# 2. 기사 본문 수집 (캐시로 재개 가능)
+python collection/en/collect_fulltext_en.py
+# 3. 반복 본문·그룹명 없는 본문 제거
+python collection/en/clean_fulltext_en.py
 ```
 
-### 5단계 (2026-10-14 팀 결정): 그룹당 200개, 연도별로 균등하게 추출
+2단계를 먼저 작게 확인하려면 `--limit 40`을 사용합니다. 이후 전체 명령을 다시 실행하면
+캐시를 재사용하고 결과 CSV를 다시 작성합니다. 기사 수와 접근 상태에 따라 소요 시간은 달라집니다.
+
+`merge.py`는 `data/raw/` **직하위의 모든 CSV**를 합칩니다(하위 `en/`, `ko/`는 읽지 않음).
+헤드라인과 본문을 섞지 않도록 4단계 전에 아래 Python 코드를 저장소 루트의 Python/Jupyter에서 실행합니다.
+기존 중간 CSV가 있으면 먼저 확인해 별도 보관하세요.
+
+```python
+from pathlib import Path
+import shutil
+
+raw = Path('data/raw')
+other = [p for p in raw.glob('*.csv') if p.name not in
+         {'news_en_headlines.csv', 'news_en_fulltext.csv', 'all_raw.csv'}]
+if other:
+    raise RuntimeError(f'병합 전에 다른 CSV를 별도 보관하세요: {other}')
+archive = Path('data/headline_version')
+archive.mkdir(parents=True, exist_ok=True)
+headline = raw / 'news_en_headlines.csv'
+if headline.exists():
+    destination = archive / headline.name
+    if destination.exists():
+        raise FileExistsError(f'기존 헤드라인 기록을 먼저 확인하세요: {destination}')
+    shutil.move(str(headline), str(destination))
+shutil.copyfile('data/extra/news_en_fulltext_clean.csv', raw / 'news_en_fulltext.csv')
+```
+
 ```bash
-python make_subset_en.py            # 다른 개수는 --n 300
-#   -> data/processed/en_processed_200.csv   (800개: 200 x 4그룹, 연도당 약 20개)
-#   -> data/raw_subset/all_raw_200.csv
+# 4. 병합 → 전처리 → 품질 확인
+python collection/en/merge.py
+python preprocessing/en/preprocess_en.py
+python preprocessing/en/check_data.py
+# 5. 그룹당 200건 표본 (다른 크기는 --n 300 등)
+python collection/en/make_subset_en.py --n 200
 ```
-기사가 적은 연도는 있는 만큼 모두 사용하고 (SEVENTEEN 2017: 13, 2018: 7, 2026: 9,
-TWICE 2018: 15), 남는 몫은 다른 연도로 넘어갑니다. 시드 고정(42)으로 재현 가능.
 
-### 최종 영어 데이터셋 (2026-10-13 실행 결과)
+| 단계 | 생성 경로 (저장소 루트 기준) |
+| --- | --- |
+| 헤드라인 | `data/raw/news_en_headlines.csv`, `data/news_en_headlines_coverage.csv`, `data/check/` |
+| 크롤링 | `data/extra/news_en_fulltext.csv`, `news_en_summary.csv`, `fetch_report.csv`, `fulltext_by_year.csv` (모두 `data/extra/`) |
+| 캐시 | `data/cache_gdelt/`, `data/cache_fulltext/` |
+| 정제 | `data/extra/news_en_fulltext_clean.csv`, `data/extra/site_list.csv` |
+| 병합·전처리 | `data/raw/all_raw.csv`, `data/processed/en_processed.csv` |
+| 표본 | `data/raw_subset/all_raw_200.csv`, `data/processed/en_processed_200.csv` |
 
-| 단계 | 개수 |
-|---|---|
-| GDELT 헤드라인 (필터 적용, 그룹당 1,000개, 연도별 균등) | 고유 URL 3,998개 |
-| 본문 크롤링 성공 (`ok`) | 1,777개 (44%) |
-| 정제 후 (3단계) | **1,502개** |
-| 전처리 후 | 1,502개 (너무 짧거나 중복된 문서 없음) |
+수집 시점과 웹페이지 상태가 달라져 과거 건수와 같지 않을 수 있습니다.
+그룹당 200건 미만이면 `make_subset_en.py`가 경고하고 확보된 만큼만 저장합니다.
+`collect_news_gdelt.py`는 별도 날짜별 헤드라인 수집기이며 위 순서에 추가 실행할 필요가 없습니다.
 
-그룹별: SEVENTEEN 412, BLACKPINK 377, BTS 364, TWICE 349. 본문 길이 중앙값 358단어.
+## 배포 CSV와의 차이
 
-연도별 기사 수:
+수록 파일은 `data/raw/en/raw_en.csv`, `data/processed/en/processed_en.csv`(각 800건)입니다.
+위 중간 파일과 경로·그룹명·출처·날짜 형식이 다릅니다. 중간 데이터는 대문자 영문 그룹명,
+`source=gdelt_news`, UTC 날짜를 사용합니다. 팀 배포본은 `bts/블랙핑크/세븐틴/트와이스`,
+출처 도메인, 한국 시간, `text_type=news`를 사용합니다.
+배포본을 `preprocess_en.py`에 바로 입력하면 `EN_SOURCES` 필터에 의해 모두 제외될 수 있습니다.
+배포본 재처리 방법은 [영어 전처리 안내](../../preprocessing/en/README.md)를 보세요.
 
-| | 2017 | 2018 | 2019 | 2020 | 2021 | 2022 | 2023 | 2024 | 2025 | 2026 |
-|---|---|---|---|---|---|---|---|---|---|---|
+`make_repo_export.py`는 **이전 단일 폴더 배치용** 도구입니다. 현재 저장소 루트에서 직접 실행하면
+같은 폴더의 `preprocess_en.py` 등을 찾지 못합니다. 필요한 경우 별도 작업 폴더에
+`collection/en/*.py`, `preprocessing/en/*.py`, 영어 수집 `requirements.txt`와 위 중간 `data/`를
+모은 다음 실행하세요. 출력은 그 폴더의 `repo_export/`이며 기존 `repo_export/`를 삭제 후 재생성합니다.
+이 도구가 생성하는 README와 환경 파일은 과거 템플릿이므로 현재 문서 위에 통째로 덮어쓰지 마세요.
+`--no-text`는 `text`와 `clean_text`만 비우며 제목·URL·tokens는 유지합니다.
+
+## 과거 실행 기록 (2026-10-13, 전체 수집분)
+
+헤드라인 3,998개 → 본문 1,777개 → 정제·전처리 1,502개 → 이후 200개씩 추출해 800개.
+이 수치는 재실행 보장값이 아닙니다. [stats](stats/README.md)는 전체 수집분의 기록입니다.
+
+당시 정제 후 그룹별 건수는 SEVENTEEN 412, BLACKPINK 377, BTS 364, TWICE 349였으며
+본문 길이 중앙값은 358단어였습니다. 아래는 기존 실험 문서의 연도별 기록입니다.
+
+| 그룹 | 2017 | 2018 | 2019 | 2020 | 2021 | 2022 | 2023 | 2024 | 2025 | 2026 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | BLACKPINK | 15 | 33 | 32 | 34 | 33 | 39 | 42 | 54 | 57 | 38 |
 | BTS | 33 | 31 | 28 | 17 | 32 | 34 | 36 | 50 | 54 | 49 |
 | SEVENTEEN | 13 | 7 | 22 | 21 | 53 | 70 | 53 | 90 | 74 | 9 |
 | TWICE | 19 | 15 | 30 | 38 | 38 | 34 | 55 | 54 | 48 | 18 |
 
-### 주요 파일
+## 데이터 카드 (영어 파트, 당시 기록)
 
-| 파일 | 내용 |
-|---|---|
-| `data/processed/en_processed.csv` | **분석용 메인 파일.** 기사 1,502개 + `clean_text`, `tokens`(TF-IDF/LDA에 바로 사용), `n_tokens` |
-| `data/raw/all_raw.csv` | 전처리 전 원본 (헤드라인 = `title`, 본문 = `text`, URL, 날짜, 그룹) |
-| `data/headline_version/news_en_headlines.csv` | 크롤링 전 헤드라인 4,000개 (수집 과정 기록용) |
-| `data/extra/fetch_report.csv` | URL별 크롤링 결과 (ok, robots_disallowed, 404 등) |
-| `data/extra/fulltext_by_year.csv` | 그룹 × 연도별 기사 수 |
-| `data/extra/site_list.csv` | 출처 사이트 290개와 사이트별 기사 수 |
-| `data/check/` | 헤드라인 필터 확인 샘플 (통과 / 제외된 헤드라인) |
+아래는 기존 실험의 방법·한계를 보존한 기록입니다. 상대 경로는 당시 중간 데이터 기준입니다.
 
-## 데이터 카드 (영어 파트)
 
 **출처와 방법**
 - GDELT DOC 2.0(전 세계 영어 뉴스 색인)으로 기사를 찾음. 한국 언론사와 그 영어판은

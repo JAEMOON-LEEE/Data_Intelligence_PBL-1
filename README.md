@@ -3,6 +3,59 @@
 데이터인텔리전스 PBL 모듈 #1 팀 프로젝트입니다.
 한국어 뉴스와 해외 영어 뉴스 기사를 수집·전처리하고, LDA 토픽 모델링으로 국내와 해외 언론이 각 그룹을 어떤 주제로 다루는지 비교합니다.
 
+## 실행 환경과 빠른 시작
+
+로컬 기준 환경은 **Python 3.12 (64비트)** 입니다. 아래 명령은 별도 안내가 없으면
+저장소 최상위 폴더에서 실행합니다. `.python-version`은 버전 선택용이며 Python을 설치하지는 않습니다.
+
+```bash
+python -m venv .venv
+```
+
+가상환경 활성화:
+
+```powershell
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+```
+
+```bash
+# macOS / Linux
+source .venv/bin/activate
+```
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m spacy download en_core_web_sm
+python -m pip check
+python -m jupyterlab
+```
+
+PowerShell에서 활성화가 차단되면 정책 변경 없이 `.\.venv\Scripts\python.exe`를
+위 명령의 `python` 대신 사용할 수 있습니다. Jupyter에서는 이 가상환경의 Python 커널을 선택합니다.
+spaCy 모델 다운로드는 영어 전처리에만 필요합니다.
+
+전체 설치 대신 필요한 단계의 환경만 설치할 수 있습니다.
+
+| 작업 | 저장소 루트에서 설치 | 실행 안내 |
+| --- | --- | --- |
+| 한국어 수집 | `python -m pip install -r collection/ko/requirements.txt` | [한국어 수집](collection/ko/README.md) |
+| 영어 수집 | `python -m pip install -r collection/en/requirements.txt` | [영어 수집](collection/en/README.md) |
+| 한국어 전처리 | `python -m pip install -r preprocessing/ko/requirements.txt` | [Kiwi 노트북](preprocessing/ko/README.md) |
+| 영어 전처리 | `python -m pip install -r preprocessing/en/requirements.txt` | [spaCy 스크립트](preprocessing/en/README.md) |
+| LDA 분석 | `python -m pip install -r topic_modeling/requirements.txt` | [토픽 모델링](topic_modeling/README.md) |
+| 빈도·TF-IDF·워드클라우드 | `python -m pip install -r visualization/requirements.txt` | [시각화](visualization/README.md) |
+
+이미 수록된 CSV로 분석할 때는 수집·전처리를 다시 실행할 필요가 없습니다.
+루트의 두 `Topic_Modeling_*.ipynb`는 상대 경로가 맞춰져 있습니다.
+한국어 전처리와 시각화 노트북은 개인 PC 경로 또는 Colab 설정이 남아 있으므로 각 README의
+**실행 전 수정**을 먼저 적용하세요. 한글 폰트는 pip 패키지와 별도로 필요합니다.
+
+requirements는 호환 범위를 지정한 실행 환경이며 과거 실험의 잠금 파일이 아닙니다.
+라이브러리·언어 모델 버전과 수집 시점이 달라지면 토큰·토픽·수치도 달라질 수 있습니다.
+공유할 실험은 `python -m pip freeze > requirements-lock.txt`로 실제 설치 버전도 기록하세요.
+
 ## 분석 대상 및 범위
 
 | 항목 | 기준 |
@@ -27,7 +80,8 @@
 ├── preprocessing/        # 전처리 코드
 │   ├── ko/
 │   └── en/
-├── topic_modeling/       # 토픽 모델링 설명
+├── topic_modeling/       # 토픽 모델링 설명·실행 환경
+├── visualization/        # 한국어·영어 빈도/TF-IDF/워드클라우드 노트북
 ├── k초기값 시각자료/        # k 선정용 그래프·pyLDAvis 캡처
 ├── Topic_Modeling_ko.ipynb  # 한국어 토픽 모델링 노트북
 └── Topic_Modeling_en.ipynb  # 영어 토픽 모델링 노트북
@@ -53,7 +107,7 @@ id, group, language, source, source_url, query, title, text, text_type, publishe
 | `query` | 수집에 사용한 검색어 |
 | `title` | 기사 제목 |
 | `text` | 기사 본문 |
-| `text_type` | 자료 유형 (현재 데이터: 한국어 `full`, 영어 `news`) |
+| `text_type` | 한국어 원본 `news`, 한국어 전처리본 `full`, 영어 `news` (파일별 차이는 data/README.md 참고) |
 | `published_at` | 기사 작성일 |
 | `collected_at` | 데이터 수집일 |
 
@@ -67,10 +121,10 @@ id, group, language, source, source_url, query, title, text, text_type, publishe
 
 ### 최종 데이터
 
-| 언어 | 원본 | 전처리 | 문서 수 | 그룹별 |
+| 언어 | 원본 | 전처리 | 문서 수 (원본 → 전처리) | 전처리본 그룹별 |
 | --- | --- | --- | --- | --- |
-| 한국어 | `data/raw/ko/raw_ko.csv` | `data/processed/ko/processed_ko.csv` | 1,086 | bts 199, 세븐틴 198, 트와이스 197, 블랙핑크 196, 베이비몬스터 153, 코르티스 143 |
-| 영어 | `data/raw/en/raw_en.csv` | `data/processed/en/processed_en.csv` | 800 | bts, 블랙핑크, 세븐틴, 트와이스 각 200 |
+| 한국어 | `data/raw/ko/raw_ko.csv` | `data/processed/ko/processed_ko.csv` | 1,200 → 1,086 | bts 199, 세븐틴 198, 트와이스 197, 블랙핑크 196, 베이비몬스터 153, 코르티스 143 |
+| 영어 | `data/raw/en/raw_en.csv` | `data/processed/en/processed_en.csv` | 800 → 800 | bts, 블랙핑크, 세븐틴, 트와이스 각 200 |
 
 ## 1. 데이터 수집 (`collection/`)
 
@@ -94,8 +148,8 @@ id, group, language, source, source_url, query, title, text, text_type, publishe
 | 4 | `merge.py` → `preprocess_en.py` → `check_data.py` | 병합, 전처리, 확인 |
 | 5 | `make_subset_en.py` | 그룹당 200개, 연도별 균등 추출 (시드 42) |
 
-- 설정 파일(`config.py`, `common.py`)은 `collection/en/`에 있습니다. 다시 실행하려면 `collection/en/`과 `preprocessing/en/`의 `.py` 파일을 한 폴더에 모아서 실행합니다.
-- 설치: `pip install -r collection/en/requirements.txt`, `python -m spacy download en_core_web_sm` (최종 파이프라인은 API 키 불필요)
+- 설정 파일(`config.py`, `common.py`)은 `collection/en/`에 있으며 전처리 스크립트가 자동으로 찾습니다. 저장소 루트에서 파일 경로를 지정해 실행합니다.
+- 수집과 전처리의 설치 파일은 분리되어 있습니다. [영어 수집 README](collection/en/README.md)에 실제 실행 순서와 중간 파일 경로를 정리했습니다. GDELT 경로에는 API 키가 필요 없습니다.
 
 수집 결과 (2026-10-13)
 
@@ -124,9 +178,10 @@ id, group, language, source, source_url, query, title, text, text_type, publishe
 
 ### 한국어
 
-- 형태소 분석을 이용한 토큰화, 명사 등 추출
-- 조사·어미 등 불용어 제거, 그룹명과 약칭 등 표기 통일
-- 그룹명은 토큰에서 제거됨 (전처리 코드는 아직 `preprocessing/ko/`에 올라오지 않음)
+- 노트북: [preporcess_ko.ipynb](preprocessing/ko/preporcess_ko.ipynb) (현재 저장소 파일명)
+- Kiwi 형태소 분석, 일반명사·고유명사 및 지정한 외국어 변환, 기본·뉴스·그룹명 불용어 제거
+- 그룹·멤버·소속사 등 표기 정규화, 서로 다른 문서 3개 이상에 등장한 단어만 유지
+- 개인 PC의 절대 경로를 입력·출력 경로로 사용하므로 [실행 안내](preprocessing/ko/README.md)를 먼저 확인
 
 ### 영어 (`preprocessing/en/preprocess_en.py`)
 
@@ -146,8 +201,8 @@ id, group, language, source, source_url, query, title, text, text_type, publishe
 - 라이브러리: Gensim (`LdaModel`, `CoherenceModel`), pyLDAvis
 - 수업 실습 7-2 노트북의 셀 순서를 따름
 - 언어별로 모델을 따로 학습 (한국어 k=7, 영어 k=9)
-- 불용어는 전처리 결과를 그대로 사용
-- 세부 표와 그룹별 수치는 `topic_modeling/README.md`와 같음
+- LDA 노트북은 전처리 토큰을 사용하고, 시각화 노트북은 추가 불용어 필터를 적용함
+- 아래 결과 표는 전체 토픽의 초기 해석이며, `topic_modeling/README.md`는 노이즈 토픽을 제외하고 다시 정규화한 비교 결과를 담음
 
 ### 진행 순서
 
@@ -161,7 +216,7 @@ id, group, language, source, source_url, query, title, text, text_type, publishe
 | 5 | pyLDAvis 시각화 |
 | 6 | `CoherenceModel`(u_mass)로 응집도 계산 |
 | 8 | `show_coherence`로 k=2~15 혼란도·응집도 비교 |
-| 9–13 | 문서별 토픽 비중을 `group`으로 묶어 평균, 기간 확인, 막대그래프 |
+| 9–17 | 그룹별 토픽 평균, 노이즈 제외·재정규화, 기간 확인, 그래프·공통 카테고리·대표 문서 |
 
 `show_coherence`는 `passes`를 지정하지 않는다. 위에 적은 최종 모델은 `passes=5`로 다시 학습한 결과이다.
 
@@ -188,7 +243,7 @@ id, group, language, source, source_url, query, title, text, text_type, publishe
   - 그래프: `k초기값 시각자료/coherence_k2-6.png`, `perplexity_k2-6.png`, `k10_pyLDAvis.png`
 - **영어: k = 9**
   - 응집도 최댓값은 k=2 (−1.009). 그다음 봉우리는 k=9 (−1.024). 이웃인 k=8은 −1.047, k=10은 −1.075
-  - 혼란도는 k가 커질수록 단조 감소 (−7.756 → −8.336)
+  - `log_perplexity`는 k가 커질수록 감소 (−7.756 → −8.336). 로그 값의 감소 자체를 성능 개선으로 해석하지 않음
   - 그룹 비교에 쓰도록 최종 모델은 k=9
   - 그래프: `coherence_en.png`, `perplexity_en.png`. `k7_pyLDAvis_en.png`는 비교용 k=7 화면 (원 7개)
 
@@ -266,7 +321,7 @@ id, group, language, source, source_url, query, title, text, text_type, publishe
 - [x] 한국어 토픽 모델링 (k = 7)과 그룹별 토픽 비중
 - [x] 영어 토픽 모델링 (k = 9)과 그룹별 토픽 비중
 - [ ] 국내·해외 토픽 해석 비교 정리
-- [ ] 한국어 전처리 코드 업로드 (`preprocessing/ko/`)
+- [x] 한국어 전처리 노트북 업로드 (`preprocessing/ko/preporcess_ko.ipynb`)
 
 ## 논의 필요
 

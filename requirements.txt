@@ -1,4 +1,6 @@
-pandas
-gensim
-pyLDAvis
-matplotlib
+# Full project environment (Python 3.12).
+# For one stage only, install that stage's requirements.txt instead.
+-r collection/requirements.txt
+-r preprocessing/requirements.txt
+-r topic_modeling/requirements.txt
+-r visualization/requirements.txt
