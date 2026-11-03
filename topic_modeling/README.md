@@ -31,6 +31,10 @@ Colab에서는 저장소의 `data/`를 함께 준비하고 `%cd`로 저장소 �
 
 환경 파일은 Gensim 4.4 이상을 사용합니다. 기존 출력은 과거 실행 기록으로,
 동일 시드여도 라이브러리 버전에 따라 토픽 번호·수치가 달라질 수 있으니 재학습 후 라벨을 다시 확인하세요.
+NumPy는 2.5 미만으로 제한합니다. NumPy 2.5와 pyLDAvis 3.4.1 조합에서는 기본 좌표 계산의
+복소수 결과 때문에 화면 표시/HTML 저장 시 `complex128 is not JSON serializable` 오류가 재현되었습니다.
+전체 환경 또는 이 폴더의 requirements를 설치하면 해당 조합을 피할 수 있습니다.
+관련 API 변경은 [NumPy 2.5 릴리스 노트](https://numpy.org/doc/2.5/release/2.5.0-notes.html)를 참고하세요.
 
 ## 입력 데이터
 

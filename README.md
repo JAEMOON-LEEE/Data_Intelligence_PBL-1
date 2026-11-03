@@ -8,19 +8,17 @@
 로컬 기준 환경은 **Python 3.12 (64비트)** 입니다. 아래 명령은 별도 안내가 없으면
 저장소 최상위 폴더에서 실행합니다. `.python-version`은 버전 선택용이며 Python을 설치하지는 않습니다.
 
-```bash
-python -m venv .venv
-```
-
-가상환경 활성화:
+Python 3.12가 설치된 상태에서 운영체제에 맞는 명령으로 가상환경을 만들고 활성화합니다.
 
 ```powershell
 # Windows PowerShell
+py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
 ```bash
 # macOS / Linux
+python3.12 -m venv .venv
 source .venv/bin/activate
 ```
 
